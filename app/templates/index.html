@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geoportal App - PDF Processing & Geoportal Integration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'system': ['system-ui', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="font-system min-h-screen">
+    <!-- Background layers added via CSS -->
+    <div class="bg-layer"></div>
+    
+    <!-- Main Container with Glassmorphism -->
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-4xl backdrop-blur-xl bg-white/20 border border-white/30 rounded-3xl shadow-2xl">
+            <!-- Header -->
+            <div class="text-center py-12 px-8 border-b border-white/20">
+                <h1 class="text-5xl font-light text-white mb-4 tracking-wide">Geoportal App</h1>
+                <p class="text-white/80 text-lg">Przetwarzanie plików PDF i integracja z geoportalem</p>
+            </div>
+
+            <!-- Main Content -->
+            <div class="p-8 space-y-8">
+                <!-- PDF Upload Section -->
+                <div class="glass-panel">
+                    <h2 class="section-title">📄 Prześlij plik PDF</h2>
+                    
+                    <!-- Upload Area -->
+                    <div class="upload-area" id="upload-area">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text">Kliknij aby wybrać plik PDF lub przeciągnij go tutaj</div>
+                        <input type="file" id="pdf-file" class="hidden" accept=".pdf">
+                        <button class="btn-primary mt-4" id="upload-btn">Wybierz plik</button>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="flex justify-center gap-4 mt-6">
+                        <button class="btn-secondary" id="best-offers-btn">
+                            ⭐ Najlepsze oferty
+                        </button>
+                        <button class="btn-outline" id="filter-toggle">
+                            🔧 Filtry zaawansowane
+                        </button>
+                    </div>
+
+                    <!-- Advanced Filters -->
+                    <div id="advanced-filters" class="hidden mt-6 glass-panel">
+                        <h3 class="text-xl font-medium text-white mb-6">Filtry zaawansowane</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="form-group">
+                                <label for="filter-location">Lokalizacja:</label>
+                                <input type="text" id="filter-location" placeholder="np. Trzebownisko">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="filter-counties">Powiaty (przecinkami):</label>
+                                <input type="text" id="filter-counties" placeholder="łańcucki, rzeszowski">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="filter-min-area">Min powierzchnia (ha):</label>
+                                <input type="number" id="filter-min-area" step="0.01" placeholder="0.08">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="filter-max-area">Max powierzchnia (ha):</label>
+                                <input type="number" id="filter-max-area" step="0.01">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="filter-min-price">Min cena (PLN):</label>
+                                <input type="number" id="filter-min-price" placeholder="1000">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="filter-max-price">Max cena (PLN):</label>
+                                <input type="number" id="filter-max-price" placeholder="20000">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="filter-property-types">Typy nieruchomości:</label>
+                                <input type="text" id="filter-property-types" placeholder="rolna, budowlana">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="filter-min-days">Min dni od dziś:</label>
+                                <input type="number" id="filter-min-days" value="7">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="filter-max-days">Max dni od dziś:</label>
+                                <input type="number" id="filter-max-days">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="filter-min-discount">Min zniżka (%):</label>
+                                <input type="number" id="filter-min-discount" placeholder="0">
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-center gap-4 mt-6">
+                            <button class="btn-primary" id="apply-filters-btn">
+                                Zastosuj filtry i przetwórz
+                            </button>
+                            <button class="btn-outline" id="clear-filters-btn">
+                                Wyczyść filtry
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Loading -->
+                    <div class="loading hidden" id="loading">
+                        <div class="spinner"></div>
+                        <p class="text-white mt-4">Przetwarzanie pliku PDF...</p>
+                    </div>                    <!-- Messages -->
+                    <div class="error-message hidden" id="error-message"></div>
+                    <div class="success-message hidden" id="success-message"></div>
+                    
+                    <!-- Results -->
+                    <div class="results hidden" id="results">
+                        <div id="results-summary" class="glass-panel mb-6"></div>
+                        <h3 class="text-xl font-medium text-white mb-4">Wyniki przetwarzania</h3>
+                        <div id="results-content" class="space-y-4"></div>
+                    </div>
+                </div>
+
+                <!-- Geoportal Access Section -->
+                <div class="glass-panel">
+                    <h2 class="section-title">🌍 Otwórz rekord w geoportalu</h2>
+                    <div class="form-group max-w-md">
+                        <label for="record-id">ID rekordu:</label>
+                        <input type="number" id="record-id" placeholder="Wprowadź ID rekordu">
+                    </div>
+                    <button class="btn-secondary" id="open-geoportal-btn">Otwórz w geoportalu</button>
+                    
+                    <!-- Loading -->
+                    <div class="loading hidden" id="geoportal-loading">
+                        <div class="spinner"></div>
+                        <p class="text-white mt-4">Otwieranie rekordu w geoportalu...</p>
+                    </div>
+                    
+                    <!-- Messages -->
+                    <div class="error-message hidden" id="geoportal-error"></div>
+                    <div class="success-message hidden" id="geoportal-success"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- External JavaScript -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
